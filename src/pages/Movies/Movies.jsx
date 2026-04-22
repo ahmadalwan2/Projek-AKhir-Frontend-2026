@@ -11,13 +11,14 @@ const Movies = () => {
   const [movies, setMovies] = useState([]);
   const [user, setUser] = useState(null);
 
-  // 🔥 MODAL STATE
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem("user"));
     setUser(currentUser);
+
+    console.log("IMG_URL:", IMG_URL); // 🔥 DEBUG
     getMovies();
   }, []);
 
@@ -30,7 +31,9 @@ const Movies = () => {
       const apiMovies = res.data.results.map((m) => ({
         id: m.id,
         title: m.title,
-        poster_path: IMG_URL + m.poster_path,
+        poster_path: m.poster_path
+          ? `${IMG_URL}${m.poster_path}`
+          : "https://via.placeholder.com/300x450",
         price: (Math.random() * 5 + 3).toFixed(2),
         isApi: true,
       }));
@@ -46,11 +49,10 @@ const Movies = () => {
 
       setMovies([...localWithFlag, ...apiMovies]);
     } catch (err) {
-      console.error(err);
+      console.error("ERROR FETCH:", err);
     }
   };
 
-  // 🔥 DELETE (ADMIN)
   const handleDelete = (id) => {
     const updated = movies.filter((m) => m.id !== id);
     setMovies(updated);
@@ -62,13 +64,11 @@ const Movies = () => {
     localStorage.setItem("movies", JSON.stringify(filtered));
   };
 
-  // 🔥 OPEN MODAL
   const openBuyModal = (movie) => {
     setSelectedMovie(movie);
     setShowModal(true);
   };
 
-  // 🔥 CONFIRM BUY
   const confirmBuy = () => {
     const requests =
       JSON.parse(localStorage.getItem("requests")) || [];
@@ -91,7 +91,6 @@ const Movies = () => {
     setSelectedMovie(null);
   };
 
-  // 🔥 CHECK STATUS
   const getStatus = (movieId) => {
     const requests =
       JSON.parse(localStorage.getItem("requests")) || [];
@@ -108,7 +107,6 @@ const Movies = () => {
   return (
     <div className="bg-black text-white min-h-screen flex flex-col">
 
-      {/* CONTENT */}
       <div className="flex-grow px-6 pt-24">
         <h1 className="text-2xl font-bold mb-6">All Movies</h1>
 
@@ -122,6 +120,9 @@ const Movies = () => {
 
                   <img
                     src={movie.poster_path}
+                    onError={(e) => {
+                      e.target.src = "https://via.placeholder.com/300x450";
+                    }}
                     alt={movie.title}
                     className="w-full h-[300px] object-cover"
                   />
@@ -138,7 +139,6 @@ const Movies = () => {
 
                     <div className="flex gap-2 mt-2">
 
-                      {/* ADMIN */}
                       {user?.role === "admin" && (
                         <>
                           <button
@@ -159,7 +159,6 @@ const Movies = () => {
                         </>
                       )}
 
-                      {/* USER */}
                       {user?.role === "user" && (
                         <>
                           {status === "pending" && (
@@ -177,7 +176,7 @@ const Movies = () => {
                           {!status && (
                             <button
                               onClick={() => openBuyModal(movie)}
-                              className="bg-green-600 px-2 py-1 text-xs rounded hover:bg-green-700"
+                              className="bg-green-600 px-2 py-1 text-xs rounded"
                             >
                               Buy
                             </button>
@@ -194,64 +193,22 @@ const Movies = () => {
         </div>
       </div>
 
-      {/* 🔥 MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#111] p-6 rounded-xl text-center">
+            <h2 className="mb-4">Konfirmasi Pembelian</h2>
 
-          <div className="bg-[#111] border border-gray-800 p-6 rounded-xl w-[320px] text-center shadow-xl animate-fadeIn">
-
-            <h2 className="text-lg font-semibold mb-2">
-              Konfirmasi Pembelian
-            </h2>
-
-            <p className="text-gray-400 text-sm mb-4">
-              Yakin mau beli <span className="text-white font-semibold">{selectedMovie?.title}</span>?
+            <p className="mb-4">
+              Beli <b>{selectedMovie?.title}</b>?
             </p>
 
             <div className="flex gap-3 justify-center">
-
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={confirmBuy}
-                className="px-4 py-2 rounded bg-green-600 hover:bg-green-700"
-              >
-                Yes, Buy
-              </button>
-
+              <button onClick={() => setShowModal(false)}>Cancel</button>
+              <button onClick={confirmBuy}>Buy</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* FOOTER */}
-      <footer className="border-t border-gray-800 py-8 text-sm text-gray-500 mt-16">
-        <div className="flex justify-between items-center flex-wrap gap-4 p-6">
-          <p>Flixy Film © 2026</p>
-
-          <div className="flex gap-6">
-            <Link to="/dashboard">Home</Link>
-            <Link to="/movies">Movies</Link>
-
-            {/* 🔥 HANYA ADMIN */}
-            {user?.role === "admin" && (
-              <>
-                <Link to="/add-movie">Add Movie</Link>
-                <Link to="/admin">Admin</Link>
-              </>
-            )}
-
-            <Link to="/profile">Profile</Link>
-          </div>
-
-          <p>Built with ❤️ by Flixy</p>
-        </div>
-      </footer>
     </div>
   );
 };
